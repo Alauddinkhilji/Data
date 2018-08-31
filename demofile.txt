@@ -1,0 +1,246 @@
+CREATE OR REPLACE  PROCEDURE p_ename
+AS
+v_empname emp.ename%TYPE;
+CURSOR c_emp IS SELECT ename from emp;
+BEGIN
+	OPEN c_emp;
+	IF c_emp%ISOPEN THEN
+		LOOP
+			FETCH c_emp INTO v_empname;
+			EXIT WHEN c_emp%NOTFOUND;
+			dbms_output.put_line('Name is '||v_empname);
+		END LOOP;
+	CLOSE c_emp;
+	END IF;
+EXCEPTION
+	WHEN NO_DATA_FOUND THEN
+			dbms_output.put_line('Employee not there in table');
+	WHEN OTHERS THEN
+			dbms_output.put_line('Some issue');
+END p_ename;
+/
+-----
+how to run->exec p_ename 
+OR
+delcare 
+BEGIN
+	p_ename ;
+END;
++++++++++++++++++++++++++++++++++++++++++++++++
+CREATE OR REPLACE  PROCEDURE p_ename(l_deptno IN number)
+AS
+v_empname emp.ename%TYPE;
+CURSOR c_emp IS SELECT ename from emp WHERE deptno=l_deptno;
+BEGIN
+--l_deptno:=20;
+	OPEN c_emp;
+	IF c_emp%ISOPEN THEN
+		LOOP
+			FETCH c_emp INTO v_empname;
+			EXIT WHEN c_emp%NOTFOUND;
+			dbms_output.put_line('Name is '||v_empname);
+		END LOOP;
+	CLOSE c_emp;
+	END IF;
+EXCEPTION
+	WHEN NO_DATA_FOUND THEN
+			dbms_output.put_line('Employee not there in table');
+	WHEN OTHERS THEN
+			dbms_output.put_line('Some issue');
+END p_ename;
+/
+-------how to run->exec p_ename(10)
+OR
+delcare 
+BEGIN
+	p_ename(10);
+END;
+=================================================
+CREATE OR REPLACE  PROCEDURE p_ename(l_empno IN number,l_ename OUT varchar2)
+AS
+--v_empname emp.ename%TYPE;
+CURSOR c_emp IS SELECT ename from emp WHERE empno=l_empno;
+BEGIN
+	OPEN c_emp;
+	IF c_emp%ISOPEN THEN
+		LOOP
+			FETCH c_emp INTO l_ename;
+			EXIT WHEN c_emp%NOTFOUND;
+			--dbms_output.put_line('Name is '||v_empname);
+		END LOOP;
+	CLOSE c_emp;
+	END IF;
+EXCEPTION
+	WHEN NO_DATA_FOUND THEN
+			dbms_output.put_line('Employee not there in table');
+	WHEN OTHERS THEN
+			dbms_output.put_line('Some issue');
+END p_ename;
+/
+---how to run
+DECLARE
+v_ename emp.ename%TYPE;
+BEGIN
+	p_ename(7788,v_ename);
+	dbms_output.put_line('Name is '||v_ename);
+END;
+---- variable v_ename varchar2(10)
+	exec p_ename(7788,:v_ename);
+	print v_ename
+/
+
+===================================FUNCTION
+CREATE OR REPLACE  FUNCTION f_ename(l_empno IN number,l_ename OUT varchar2)
+RETURN varchar2 AS
+v_empname emp.ename%TYPE;
+CURSOR c_emp IS SELECT ename from emp WHERE empno=l_empno; BEGIN
+	OPEN c_emp;IF c_emp%ISOPEN THEN
+		LOOP
+			FETCH c_emp INTO l_ename;v_empname:=l_ename;
+			EXIT WHEN c_emp%NOTFOUND;
+		END LOOP;
+	CLOSE c_emp;END IF;
+	RETURN v_empname;
+EXCEPTION
+	WHEN NO_DATA_FOUND THEN
+			dbms_output.put_line('Employee not there in table');
+	WHEN OTHERS THEN
+			dbms_output.put_line('Some issue');
+END f_ename;
+/
+----HOW TO RUN
+DECLARE
+v_o_ename emp.ename%TYPE;
+v_r_ename emp.ename%TYPE; 
+BEGIN
+	v_r_ename:=f_ename(7788,v_o_ename);
+	dbms_output.put_line('Ename is '||v_r_ename);
+	dbms_output.put_line('Ename is '||v_o_ename);
+END
+----
+Variable v_ename1 varchar2(10)
+Variable v_ename2 varchar2(10)
+	exec :v_ename1:= p_ename(7788,:v_ename2);
+	print 
+==========================================================
+CREATE OR REPLACE PROCEDURE p_getDetails(l_empno IN number,l_hiredate out date,l_deptno out number,l_dname out varchar2)AS
+CURSOR c_emp IS SELECT e.hiredate,e.deptno,d.dname from emp e  join dept d on(e.deptno=d.deptno) WHERE empno=l_empno;
+BEGIN
+	OPEN c_emp;
+	LOOP
+		FETCH c_emp INTO l_hiredate,l_deptno,l_dname;
+		EXIT WHEN c_emp%NOTFOUND;
+	END LOOP;
+END p_getDetails;
+/
+---hoe to run
+DECLARE
+v_hiredate date;
+v_deptno number(3);
+v_dname varchar2(10);
+BEGIN
+	p_getDetails(7788,v_hiredate,v_deptno,v_dname);
+	dbms_output.put_line(v_hiredate);
+	dbms_output.put_line(v_deptno);
+	dbms_output.put_line(v_dname);
+END;
+/
+===================================PACK
+CREATE OR REPLACE PACKAGE pack_emp
+AS--package specification
+g_name varchar2(20);
+procedure p_getName(l_empno IN number,g_name OUT varchar2);
+function f_getDname(l_empno IN number) RETURN varchar2;
+END pack_emp;
+---BODY
+CREATE OR REPLACE PACKAGE BODY pack_emp
+AS--package body 
+procedure p1
+IS
+BEGIN
+	dbms_output.put_line('IN P1 ');
+END p1;
+procedure p_getName(l_empno IN number,g_name OUT varchar2)
+IS
+BEGIN
+	select ename INTO g_name from emp where empno=l_empno;
+END p_getName;
+function f_getDname(l_empno IN number) RETURN varchar2
+IS
+
+BEGIN
+	select dname INTO g_name from dept where deptno=(select deptno from emp where empno=l_empno);
+	return g_name;
+END f_getDname;
+END pack_emp;
+/
+----how to run
+DECLARE
+v_name varchar2(20);
+BEGIN
+	pack_emp.p_getName(7788,v_name);
+	dbms_output.put_line('Employee name is '||v_name);
+	v_name:=pack_emp.f_getDname(7788);
+	dbms_output.put_line('Dept name is '||v_name);
+END;
+/
+---TYPE 2
+variable v_name varchar2(20)
+exec pack_emp.p_getName(7788,:v_name);
+print v_name
+
+exec :v_name:=pack_emp.f_getDname(7788);
+print v_name
+============================PRAGMA AUTO
+CREATE OR REPLACE PROCEDURE p_child
+    AS
+	v_name varchar2(10);
+    BEGIN
+       select ename INTO v_name FROM emp  where empno=79020000;
+   END p_child;
+/
+---
+CREATE OR REPLACE PROCEDURE p_parent
+    AS
+	v_name varchar2(10);
+	pragma autonomOus_TRANSACTION;
+    BEGIN
+       update emp set sal=2000  where empno=7788;
+commit;
+	p_child;
+   END p_parent;
+/
+-----------------------------CALLING TECH
+=======================
+create or replace procedure p_demo(l_empno number default 7900)
+As
+v_emp emp%ROWTYPE;
+BEGIN
+	select * INTO v_emp FROM emp WHERE empno=l_empno;
+	dbms_output.put_line(v_emp.ename);
+END p_demo;
+/
+
+----how to run
+
+exec p_demo(7788)
+exec p_demo
+exec p_demo(l_empno=>7788)
+
+-----------------
+create or replace procedure p_demo(l_empno number default 7900
+,l_name varchar2 default 'SMITH')
+As
+v_emp emp%ROWTYPE;
+BEGIN
+	select * INTO v_emp FROM emp WHERE empno=l_empno OR ename='l_name';
+	dbms_output.put_line(v_emp.ename);
+END p_demo;
+
+
+
+
+
+
+
+

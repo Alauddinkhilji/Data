@@ -1,0 +1,18 @@
+ DECLARE
+  2  TYPE emp_record IS RECORD (
+  3     v_empno emp.empno%TYPE,
+  4     v_ename emp.ename%TYPE,
+  5     v_dname dept.dname%TYPE,
+  6     v_loc dept.loc%TYPE
+  7  );--record for emp and dept table
+  8  TYPE emp_table IS TABLE OF emp_record index by binary_integer;--table type
+  9  v_emp_var emp_table;--define variable of table type
+ 10  BEGIN
+ 11  SELECT empno,dname,ename INTO v_emp_var(1).v_empno,v_emp_var(1).v_dname,v_emp_var(1).v_ename FROM EMP natural join dept WHERE empno=7902;
+ 12  SELECT empno,ename,dname,loc INTO v_emp_var(2) FROM EMP natural join dept WHERE empno=7788;
+ 13  dbms_output.put_line(
+ 14  v_emp_var(1).v_empno||'  '||v_emp_var(1).v_ename||' '||v_emp_var(1).v_dname||' '||v_emp_var(1).v_loc);
+ 15  dbms_output.put_line(
+ 16  v_emp_var(2).v_empno||'  '||v_emp_var(2).v_ename||' '||v_emp_var(2).v_dname||' '||v_emp_var(2).v_loc);
+ 17* END;
+ 18  /
